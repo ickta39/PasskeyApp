@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <h1>Hello world!</h1>
+
+    <input type="text" id="user">
+    <button onclick="preLogin()">SEND</button>
+
+    <script>
+        function base64ToUintArray(base64Data) {
+            const binaryString = atob(base64Data);
+
+            const len = binaryString.length;
+            const bytes = new Uint8Array(len);
+            for (let i = 0; i < len; i++) {
+                bytes[i] = binaryString.charCodeAt(i);
+            }
+
+            return bytes
+        }
+
+        function preLogin() {
+            req = fetch("/api/passkey/begin", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    username: document.getElementById("user").value
+                })
+            }).then((resp) => {
+                resp.json().then(createCrendential)
+            })
+        }
+
+        function createCrendential(resp) {
+            console.log(resp)
+
+            resp.user.id = new TextEncoder().encode(resp.user.id)
+            resp.challenge = new TextEncoder().encode(resp.challenge)
+            //resp.challenge = base64ToUintArray(resp.challenge)
+
+            console.log(resp.challenge)
+
+            prom = navigator.credentials.create({
+                publicKey: resp
+            }).then(completeLogin)
+        }
+
+        function completeLogin(cred) {
+            console.log(cred)
+
+            req = fetch("/api/passkey/complete", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(cred)
+            })
+        }
+    </script>
+</body>
+</html>
